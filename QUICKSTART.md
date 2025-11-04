@@ -3,6 +3,7 @@
 ## 🚀 Get Started in 3 Steps
 
 ### Step 1: Setup Environment
+
 ```bash
 # Copy environment file
 cp .env.example .env
@@ -12,6 +13,7 @@ cp .env.example .env
 ```
 
 ### Step 2: Start Services
+
 ```bash
 # Build and start everything
 docker-compose up --build
@@ -20,6 +22,7 @@ docker-compose up --build
 ```
 
 ### Step 3: Test It
+
 ```bash
 # Make the script executable
 chmod +x test-api.sh
@@ -31,6 +34,7 @@ chmod +x test-api.sh
 ## 📱 Quick Test with cURL
 
 ### Create Account
+
 ```bash
 curl -X POST http://localhost:3000/api/auth/sign-up/email \
   -H "Content-Type: application/json" \
@@ -43,6 +47,7 @@ curl -X POST http://localhost:3000/api/auth/sign-up/email \
 ```
 
 ### Login
+
 ```bash
 curl -X POST http://localhost:3000/api/auth/sign-in/email \
   -H "Content-Type: application/json" \
@@ -54,6 +59,7 @@ curl -X POST http://localhost:3000/api/auth/sign-in/email \
 ```
 
 ### Access Protected Route
+
 ```bash
 curl http://localhost:3000/api/protected -b cookies.txt
 ```
@@ -79,6 +85,7 @@ docker-compose -f docker-compose.dev.yml up --build
 ## 📊 View Database
 
 ### Using psql
+
 ```bash
 docker-compose exec db psql -U postgres -d authdb
 
@@ -93,6 +100,7 @@ SELECT * FROM "user";
 ```
 
 ### Using Drizzle Studio
+
 ```bash
 # Install dependencies locally first
 npm install
@@ -121,6 +129,7 @@ npm run db:studio
 ## 🐛 Troubleshooting
 
 ### Can't connect to database
+
 ```bash
 # Check if containers are running
 docker-compose ps
@@ -130,6 +139,7 @@ docker-compose logs db
 ```
 
 ### Port already in use
+
 ```bash
 # Stop existing services
 docker-compose down
@@ -138,6 +148,7 @@ docker-compose down
 ```
 
 ### Want to reset database
+
 ```bash
 # WARNING: This deletes all data!
 docker-compose down -v
@@ -155,22 +166,25 @@ docker-compose up --build
 ## 🎯 Common Tasks
 
 ### Add a new protected route
+
 Edit `src/index.ts`:
+
 ```typescript
 app.get("/api/my-route", async (c) => {
   const session = await auth.api.getSession({
     headers: c.req.raw.headers,
   });
-  
+
   if (!session) {
     return c.json({ error: "Unauthorized" }, 401);
   }
-  
+
   return c.json({ message: "Success!", user: session.user });
 });
 ```
 
 ### Access current user in any route
+
 ```typescript
 const session = await auth.api.getSession({
   headers: c.req.raw.headers,
@@ -184,6 +198,7 @@ if (session) {
 ```
 
 ### Query database with Drizzle
+
 ```typescript
 import { db } from "./db/db";
 import { user } from "./db/schema";
@@ -193,7 +208,8 @@ import { eq } from "drizzle-orm";
 const users = await db.select().from(user);
 
 // Get user by email
-const foundUser = await db.select()
+const foundUser = await db
+  .select()
   .from(user)
   .where(eq(user.email, "test@example.com"));
 ```

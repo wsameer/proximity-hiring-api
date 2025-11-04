@@ -1,22 +1,22 @@
 import {
-  text,
   varchar,
   timestamp,
   boolean,
   pgTable,
   pgEnum,
+  integer,
 } from "drizzle-orm/pg-core";
 
 export const users = pgTable("user", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  name: varchar("name", { length: 255 }).notNull(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   emailVerified: boolean("emailVerified").notNull().default(false),
   image: varchar("image", { length: 500 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 
-  // Custom fields for proximity hiring
+  // Custom fields for the app
   userType: pgEnum("user_type", ["job_seeker", "job_giver"])(
     "userType"
   ).notNull(),
