@@ -1,5 +1,5 @@
 import { defineConfig, type Config } from "drizzle-kit";
-import { env } from "./src/config/env.js";
+import { env } from "./src/config/env";
 import { configDotenv } from "dotenv";
 
 configDotenv();
