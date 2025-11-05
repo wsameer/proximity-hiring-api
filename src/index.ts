@@ -3,20 +3,27 @@ import { serve } from "@hono/node-server";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 
-import { auth, type Session, type User } from "./lib/auth.js";
 import { env } from "./config/env.js";
+import type { AppContext } from "./types/app.js";
 
-const app = new Hono<{
-  // middleware to save the session and user in a context
-  Variables: {
-    user: User | null;
-    session: Session | null;
-  };
-}>();
+// Middleware
+import { sessionMiddleware } from "./middleware/auth.js";
 
+// Routes
+import authRoutes from "./routes/auth.routes.js";
+import userRoutes from "./routes/user.routes.js";
+import publicRoutes from "./routes/public.routes.js";
+
+const app = new Hono<AppContext>();
+
+// ============================================
+// GLOBAL MIDDLEWARE
+// ============================================
+
+// Logger middleware - logs all requests
 app.use("*", logger());
 
-// CORS
+// CORS middleware for auth routes
 app.use(
   "/api/auth/**",
   cors({
@@ -29,62 +36,16 @@ app.use(
   })
 );
 
-// Wildcard route - add validations for every route
-app.use("*", async (c, next) => {
-  const session = await auth.api.getSession({ headers: c.req.raw.headers });
+// Session middleware - populates user/session in context for all routes
+app.use("*", sessionMiddleware);
 
-  if (!session) {
-    c.set("user", null);
-    c.set("session", null);
-    await next();
-    return;
-  }
+// ============================================
+// MOUNT ROUTES
+// ============================================
 
-  c.set("user", session.user);
-  c.set("session", session.session);
-  await next();
-});
-
-// Mount BetterAuth routes at /api/auth
-app.on(["POST", "GET"], "/api/auth/*", (c) => {
-  return auth.handler(c.req.raw);
-});
-
-// Public routes
-app.get("/", (c) => {
-  return c.json({
-    message: "Welcome to Hono + BetterAuth API",
-    endpoints: {
-      signup: "POST /api/auth/sign-up/email",
-      signin: "POST /api/auth/sign-in/email",
-      signout: "POST /api/auth/sign-out",
-      session: "GET /api/auth/get-session",
-    },
-  });
-});
-
-app.get("/api/hello", (c) => {
-  return c.json({
-    ok: true,
-    message: "Hello Jobximity API!",
-  });
-});
-
-// Protected routes
-app.get("/api/protected", async (c) => {
-  return c.json({
-    message: "This is a protected route",
-    user: "user data here", // get session.user here
-  });
-});
-
-// Health check
-app.get("/health", (c) => {
-  return c.json({
-    status: "ok",
-    timestamp: new Date().toISOString(),
-  });
-});
+app.route("/", publicRoutes);
+app.route("/", authRoutes);
+app.route("/", userRoutes);
 
 const port = env.PORT;
 const server = serve(
@@ -93,7 +54,7 @@ const server = serve(
     port,
   },
   (info) => {
-    console.log(`Server is running on ${info.address}/${info.port}`);
+    console.log(`Server is running on http://localhost:${info.port}`);
   }
 );
 
