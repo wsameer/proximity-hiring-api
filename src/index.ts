@@ -5,9 +5,6 @@ import { logger } from "hono/logger";
 
 import { auth, type Session, type User } from "./lib/auth.js";
 import { env } from "./config/env.js";
-import { db } from "./db/db.js";
-import { users } from "./db/schema.js";
-import { eq } from "drizzle-orm";
 
 const app = new Hono<{
   // middleware to save the session and user in a context
