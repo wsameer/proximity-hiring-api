@@ -93,7 +93,7 @@ const server = serve(
     port,
   },
   (info) => {
-    console.log(`Server is running on http://localhost:${info.port}`);
+    console.log(`Server is running on ${info.address}/${info.port}`);
   }
 );
 
