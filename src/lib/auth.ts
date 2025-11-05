@@ -4,6 +4,8 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "../db/db";
 
 export const auth = betterAuth({
+  appName: "jobximity",
+
   database: drizzleAdapter(db, {
     provider: "pg",
   }),
