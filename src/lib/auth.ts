@@ -1,7 +1,7 @@
 import { betterAuth } from "better-auth";
-import { env } from "../config/env";
+import { env } from "../config/env.js";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { db } from "../db/db";
+import { db } from "../db/db.js";
 
 export const auth = betterAuth({
   appName: "jobximity",
