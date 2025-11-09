@@ -3,104 +3,104 @@
 ## System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                         Client                               │
-│                   (Browser/API Client)                       │
-└──────────────────────┬──────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────┐
+│                         Client                            │
+│                   (Browser/API Client)                    │
+└──────────────────────┬────────────────────────────────────┘
                        │ HTTP/HTTPS
                        │
-┌──────────────────────▼──────────────────────────────────────┐
-│                    Hono Web Server                           │
-│                   (Port 3000)                                │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │  Routes                                                 │ │
-│  │  • /api/auth/** → BetterAuth Handler                   │ │
-│  │  • /api/protected → Protected Routes                   │ │
-│  │  • /api/user/profile → User Info                       │ │
-│  └────────────────────────────────────────────────────────┘ │
-└──────────────────────┬──────────────────────────────────────┘
+┌──────────────────────▼───────────────────────────────────┐
+│                    Hono Web Server                       │
+│                   (Port 3000)                            │
+│  ┌─────────────────────────────────────────────────────┐ │
+│  │  Routes                                             │ │
+│  │  • /api/auth/** → BetterAuth Handler                │ │
+│  │  • /api/protected → Protected Routes                │ │
+│  │  • /api/user/profile → User Info                    │ │
+│  └─────────────────────────────────────────────────────┘ │
+└──────────────────────┬───────────────────────────────────┘
                        │
                        │ BetterAuth API
                        │
-┌──────────────────────▼──────────────────────────────────────┐
-│                    BetterAuth                                │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │  • Email/Password Authentication                       │ │
-│  │  • Session Management                                  │ │
-│  │  • Password Hashing (bcrypt)                           │ │
-│  │  • Cookie-based Sessions                               │ │
-│  └────────────────────────────────────────────────────────┘ │
-└──────────────────────┬──────────────────────────────────────┘
+┌──────────────────────▼────────────────────────────────────┐
+│                    BetterAuth                             │
+│  ┌──────────────────────────────────────────────────────┐ │
+│  │  • Email/Password Authentication                     │ │
+│  │  • Session Management                                │ │
+│  │  • Password Hashing (bcrypt)                         │ │
+│  │  • Cookie-based Sessions                             │ │
+│  └──────────────────────────────────────────────────────┘ │
+└──────────────────────┬────────────────────────────────────┘
                        │
                        │ Drizzle Adapter
                        │
-┌──────────────────────▼──────────────────────────────────────┐
-│                    Drizzle ORM                               │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │  • Type-safe Database Operations                       │ │
-│  │  • Schema Management                                   │ │
-│  │  • Migration Generation                                │ │
-│  │  • Query Builder                                       │ │
-│  └────────────────────────────────────────────────────────┘ │
-└──────────────────────┬──────────────────────────────────────┘
+┌──────────────────────▼────────────────────────────────────┐
+│                    Drizzle ORM                            │
+│  ┌──────────────────────────────────────────────────────┐ │
+│  │  • Type-safe Database Operations                     │ │
+│  │  • Schema Management                                 │ │
+│  │  • Migration Generation                              │ │
+│  │  • Query Builder                                     │ │
+│  └──────────────────────────────────────────────────────┘ │
+└──────────────────────┬────────────────────────────────────┘
                        │
                        │ postgres.js Driver
                        │
-┌──────────────────────▼──────────────────────────────────────┐
-│                    PostgreSQL Database                       │
-│                   (Port 5432)                                │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │  Tables:                                               │ │
-│  │  • user           → User accounts                      │ │
-│  │  • session        → Active sessions                    │ │
-│  │  • account        → OAuth accounts                     │ │
-│  │  • verification   → Email verification                 │ │
-│  └────────────────────────────────────────────────────────┘ │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │  Volume: postgres_data (Persistent Storage)            │ │
-│  └────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────────────▼────────────────────────────────────┐
+│                    PostgreSQL Database                    │
+│                   (Port 5432)                             │
+│  ┌──────────────────────────────────────────────────────┐ │
+│  │  Tables:                                             │ │
+│  │  • user           → User accounts                    │ │
+│  │  • session        → Active sessions                  │ │
+│  │  • account        → OAuth accounts                   │ │
+│  │  • verification   → Email verification               │ │
+│  └──────────────────────────────────────────────────────┘ │
+│  ┌──────────────────────────────────────────────────────┐ │
+│  │  Volume: postgres_data (Persistent Storage)          │ │
+│  └──────────────────────────────────────────────────────┘ │
+└───────────────────────────────────────────────────────────┘
 ```
 
 ## Docker Container Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     Docker Host                              │
-│                                                              │
+┌────────────────────────────────────────────────────────────┐
+│                     Docker Host                            │
+│                                                            │
 │  ┌─────────────────────────────────────────────────────┐   │
-│  │  Container: hono_app                                 │   │
+│  │  Container: hono_app                                │   │
 │  │  ┌───────────────────────────────────────────────┐  │   │
-│  │  │  Node.js 20 Alpine                             │  │   │
+│  │  │  Node.js 20 Alpine                            │  │   │
 │  │  │  • Hono + BetterAuth + Drizzle                │  │   │
 │  │  │  • Exposed Port: 3000                         │  │   │
 │  │  └───────────────────────────────────────────────┘  │   │
-│  │                         │                            │   │
-│  │                         │ Network: default           │   │
-│  │                         ▼                            │   │
+│  │                         │                           │   │
+│  │                         │ Network: default          │   │
+│  │                         ▼                           │   │
 │  │  ┌───────────────────────────────────────────────┐  │   │
 │  │  │  Volume Mounts:                               │  │   │
-│  │  │  • ./src → /app/src (for hot reload)         │  │   │
-│  │  │  • ./drizzle → /app/drizzle (migrations)     │  │   │
+│  │  │  • ./src → /app/src (for hot reload)          │  │   │
+│  │  │  • ./drizzle → /app/drizzle (migrations)      │  │   │
 │  │  └───────────────────────────────────────────────┘  │   │
 │  └─────────────────────────────────────────────────────┘   │
-│                                                              │
+│                                                            │
 │  ┌─────────────────────────────────────────────────────┐   │
-│  │  Container: auth_postgres                            │   │
+│  │  Container: auth_postgres                           │   │
 │  │  ┌───────────────────────────────────────────────┐  │   │
 │  │  │  PostgreSQL 16 Alpine                         │  │   │
 │  │  │  • Database: authdb                           │  │   │
 │  │  │  • Exposed Port: 5432                         │  │   │
 │  │  └───────────────────────────────────────────────┘  │   │
-│  │                         │                            │   │
-│  │                         ▼                            │   │
-│  │  ┌───────────────────────────────────────────────┐  │   │
-│  │  │  Volume: postgres_data                        │  │   │
-│  │  │  Path: /var/lib/postgresql/data               │  │   │
-│  │  │  Type: Named Volume (Persistent)              │  │   │
-│  │  └───────────────────────────────────────────────┘  │   │
+│  │                         │                           │   │
+│  │                         ▼                           │   │
+│  │  ┌──────────────────────────────────────────────┐   │   │
+│  │  │  Volume: postgres_data                       │   │   │
+│  │  │  Path: /var/lib/postgresql/data              │   │   │
+│  │  │  Type: Named Volume (Persistent)             │   │   │
+│  │  └──────────────────────────────────────────────┘   │   │
 │  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
+└────────────────────────────────────────────────────────────┘
 ```
 
 ## Authentication Flow
@@ -182,63 +182,6 @@
    If no session: Return 401 Unauthorized
 ```
 
-## Database Schema
-
-### User Table
-```sql
-CREATE TABLE "user" (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  email TEXT NOT NULL UNIQUE,
-  emailVerified BOOLEAN NOT NULL DEFAULT false,
-  image TEXT,
-  createdAt TIMESTAMP NOT NULL DEFAULT NOW(),
-  updatedAt TIMESTAMP NOT NULL DEFAULT NOW()
-);
-```
-
-### Session Table
-```sql
-CREATE TABLE "session" (
-  id TEXT PRIMARY KEY,
-  expiresAt TIMESTAMP NOT NULL,
-  ipAddress TEXT,
-  userAgent TEXT,
-  userId TEXT NOT NULL REFERENCES "user"(id),
-  createdAt TIMESTAMP NOT NULL DEFAULT NOW(),
-  updatedAt TIMESTAMP NOT NULL DEFAULT NOW()
-);
-```
-
-### Account Table
-```sql
-CREATE TABLE "account" (
-  id TEXT PRIMARY KEY,
-  accountId TEXT NOT NULL,
-  providerId TEXT NOT NULL,
-  userId TEXT NOT NULL REFERENCES "user"(id),
-  accessToken TEXT,
-  refreshToken TEXT,
-  idToken TEXT,
-  expiresAt TIMESTAMP,
-  password TEXT,
-  createdAt TIMESTAMP NOT NULL DEFAULT NOW(),
-  updatedAt TIMESTAMP NOT NULL DEFAULT NOW()
-);
-```
-
-### Verification Table
-```sql
-CREATE TABLE "verification" (
-  id TEXT PRIMARY KEY,
-  identifier TEXT NOT NULL,
-  value TEXT NOT NULL,
-  expiresAt TIMESTAMP NOT NULL,
-  createdAt TIMESTAMP NOT NULL DEFAULT NOW(),
-  updatedAt TIMESTAMP NOT NULL DEFAULT NOW()
-);
-```
-
 ## Security Features
 
 ### Password Security
@@ -308,50 +251,3 @@ CREATE TABLE "verification" (
 6. Session expires after configured time
 7. User must sign in again after expiration
 ```
-
-## Scalability Considerations
-
-### Current Setup (Single Instance)
-- Suitable for: Development, small apps
-- Limitations: Single server, no load balancing
-
-### Production Recommendations
-1. **Database**: 
-   - Use managed PostgreSQL (AWS RDS, Supabase)
-   - Enable connection pooling
-   - Set up read replicas
-
-2. **Application**:
-   - Deploy multiple instances behind load balancer
-   - Use Redis for session storage (distributed)
-   - Enable horizontal scaling
-
-3. **Security**:
-   - Use environment secrets management
-   - Enable SSL/TLS
-   - Implement rate limiting
-   - Add WAF (Web Application Firewall)
-
-4. **Monitoring**:
-   - Add logging (Winston, Pino)
-   - Set up metrics (Prometheus)
-   - Configure alerts
-   - Track errors (Sentry)
-
-## Next Steps for Production
-
-- [ ] Change BETTER_AUTH_SECRET to secure value
-- [ ] Enable email verification
-- [ ] Add OAuth providers (Google, GitHub)
-- [ ] Implement rate limiting
-- [ ] Add comprehensive logging
-- [ ] Set up monitoring and alerts
-- [ ] Configure CI/CD pipeline
-- [ ] Enable HTTPS with SSL certificates
-- [ ] Set up database backups
-- [ ] Add API documentation (Swagger/OpenAPI)
-- [ ] Implement refresh token rotation
-- [ ] Add account recovery/password reset
-- [ ] Set up error tracking
-- [ ] Configure CORS properly for production domains
-- [ ] Add input validation middleware (Zod)
