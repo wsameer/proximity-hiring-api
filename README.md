@@ -68,73 +68,6 @@ npm run db:push
 docker-compose exec app npm run db:push
 ```
 
-## 📡 API Endpoints
-
-### Authentication
-
-#### Sign Up
-
-```bash
-POST http://localhost:3000/api/auth/sign-up/email
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "password": "securepassword123",
-  "name": "John Doe"
-}
-```
-
-#### Sign In
-
-```bash
-POST http://localhost:3000/api/auth/sign-in/email
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "password": "securepassword123"
-}
-```
-
-Response includes a session token in cookies.
-
-#### Sign Out
-
-```bash
-POST http://localhost:3000/api/auth/sign-out
-Cookie: better-auth.session_token=<your-token>
-```
-
-#### Get Session
-
-```bash
-GET http://localhost:3000/api/auth/get-session
-Cookie: better-auth.session_token=<your-token>
-```
-
-### Protected Routes
-
-#### User Profile
-
-```bash
-GET http://localhost:3000/api/user/profile
-Cookie: better-auth.session_token=<your-token>
-```
-
-#### Protected Example
-
-```bash
-GET http://localhost:3000/api/protected
-Cookie: better-auth.session_token=<your-token>
-```
-
-### Health Check
-
-```bash
-GET http://localhost:3000/health
-```
-
 ## 🗄️ Database Management
 
 ### View Database with Drizzle Studio
@@ -157,46 +90,6 @@ npm run db:generate
 ```bash
 npm run db:migrate
 ```
-
-## 🧪 Testing the API
-
-### Using cURL
-
-```bash
-# Sign up
-curl -X POST http://localhost:3000/api/auth/sign-up/email \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "test@example.com",
-    "password": "Test123456!",
-    "name": "Test User"
-  }' \
-  -c cookies.txt
-
-# Sign in (saves session cookie)
-curl -X POST http://localhost:3000/api/auth/sign-in/email \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "test@example.com",
-    "password": "Test123456!"
-  }' \
-  -c cookies.txt
-
-# Access protected route
-curl http://localhost:3000/api/protected \
-  -b cookies.txt
-
-# Get user profile
-curl http://localhost:3000/api/user/profile \
-  -b cookies.txt
-```
-
-### Using Thunder Client / Postman
-
-1. Create a POST request to `http://localhost:3000/api/auth/sign-up/email`
-2. Set body to JSON with email, password, and name
-3. Send request - cookies will be automatically saved
-4. Make requests to protected routes - cookies will be sent automatically
 
 ## 🐳 Docker Commands
 
@@ -261,17 +154,6 @@ npm install
 npm run dev
 ```
 
-## 📊 Database Schema
-
-BetterAuth automatically creates these tables:
-
-- `user` - User accounts
-- `session` - Active sessions
-- `account` - OAuth accounts (for future use)
-- `verification` - Email verification tokens
-
-The schema is defined in `src/db/schema.ts` for type safety with Drizzle.
-
 ## 🚨 Troubleshooting
 
 ### Database connection errors
@@ -296,16 +178,6 @@ docker-compose logs db
 # Manually push schema
 docker-compose exec app npm run db:push
 ```
-
-## 📝 Next Steps
-
-- Add email verification
-- Implement OAuth providers (Google, GitHub, etc.)
-- Add password reset functionality
-- Implement rate limiting
-- Add refresh token rotation
-- Set up proper logging
-- Add input validation with Zod
 
 ## 📚 Resources
 
