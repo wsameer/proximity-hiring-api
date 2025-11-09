@@ -32,3 +32,4 @@ compose.yaml
 Dockerfile.example
 drizzle/
 Proximity\ Hiring\ API/
+.claude/
