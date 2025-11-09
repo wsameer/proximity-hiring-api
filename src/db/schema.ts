@@ -22,8 +22,8 @@ import {
 
 // User-related enums
 export const verificationLevelEnum = pgEnum("verification_level", [
-  "level_0",
-  "level_1_giver",
+  "level_0", // no verification this is the default
+  "level_1_giver", // verification level 1 only during adding a job listing
 ]);
 export const onlineStatusEnum = pgEnum("online_status", ["online", "offline"]);
 
@@ -78,7 +78,7 @@ export const user = pgTable(
     email: text("email").notNull().unique(),
     emailVerified: boolean("email_verified").default(false).notNull(),
 
-    // Avatar generation (no image upload for MVP)
+    // Avatar generation TODO: replace with image later
     avatarUrl: text("avatar_url"),
 
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -89,7 +89,6 @@ export const user = pgTable(
 
     // Profile fields (required by PRD)
     // Note: All users are seekers by default. No account type needed.
-    // "Giver" is an action (posting listings), not an identity.
     currentEmployer: text("current_employer"),
     currentJobTitle: text("current_job_title"),
     yearsOfExperience: integer("years_of_experience"),

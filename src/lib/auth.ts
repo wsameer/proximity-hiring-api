@@ -16,7 +16,7 @@ export const auth = betterAuth({
     requireEmailVerification: true,
   },
 
-  trustedOrigins: ["http://localhost:3000"],
+  trustedOrigins: [env.APP_URL!],
   baseURL: env.BETTER_AUTH_URL,
   secret: env.BETTER_AUTH_SECRET,
 

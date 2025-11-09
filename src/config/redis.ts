@@ -5,9 +5,10 @@
 import { createClient } from "redis";
 import { env } from "./env.js";
 
-const redisUrl = env.REDIS_URL || "redis://localhost:6379";
+const redisUrl = env.REDIS_URL;
 
 export const redisClient = createClient({
+  // Format: redis[s]://[[username][:password]@][host][:port][/db-number]
   url: redisUrl,
 });
 

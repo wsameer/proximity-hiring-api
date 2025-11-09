@@ -32,7 +32,7 @@ app.use("*", logger());
 app.use(
   "/api/auth/**",
   cors({
-    origin: "http://localhost:3001",
+    origin: env.APP_URL!,
     allowHeaders: ["Content-Type", "Authorization"],
     allowMethods: ["POST", "GET", "OPTIONS"],
     exposeHeaders: ["Content-Length"],

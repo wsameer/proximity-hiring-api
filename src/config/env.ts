@@ -1,6 +1,7 @@
 export const env = {
   PORT: parseInt(process.env.PORT || "3000"),
   NODE_ENV: process.env.NODE_ENV,
+  APP_URL: process.env.APP_URL,
 
   BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
   BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
@@ -11,5 +12,5 @@ export const env = {
   POSTGRES_USER: process.env.POSTGRES_USER,
   POSTGRES_PASSWORD: process.env.POSTGRES_PASSWORD,
 
-  REDIS_URL: process.env.REDIS_URL,
+  REDIS_URL: process.env.REDIS_URL || "redis://localhost:6379",
 };

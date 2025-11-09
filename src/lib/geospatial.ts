@@ -30,32 +30,70 @@ export function latLngToH3Cell(latitude: number, longitude: number): string {
  * @param h3Cell Center cell
  * @param ringSize Number of rings to expand (1 = immediate neighbors)
  */
-export function getNeighboringCells(h3Cell: string, ringSize: number = 3): string[] {
+export function getNeighboringCells(
+  h3Cell: string,
+  ringSize: number = 3
+): string[] {
   return Array.from(gridDisk(h3Cell, ringSize));
 }
 
 /**
- * Calculate distance between two lat/lng points (Haversine formula)
- * Returns distance in meters
+ * Calculates the straight-line distance between two geographic points
+ * using the Haversine formula.
+ *
+ * @param latitude1 - First point's latitude in degrees (-90 to 90)
+ * @param longitude1 - First point's longitude in degrees (-180 to 180)
+ * @param latitude2 - Second point's latitude in degrees (-90 to 90)
+ * @param longitude2 - Second point's longitude in degrees (-180 to 180)
+ * @returns Distance in meters
+ *
+ * @example
+ * // Distance from New York to London
+ * const distance = calculateDistance(40.7128, -74.0060, 51.5074, -0.1278);
+ * console.log(distance); // ~5,570,000 meters or ~5,570 km
  */
 export function calculateDistance(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
+  latitude1: number,
+  longitude1: number,
+  latitude2: number,
+  longitude2: number
 ): number {
-  const R = 6371e3; // Earth radius in meters
-  const φ1 = (lat1 * Math.PI) / 180;
-  const φ2 = (lat2 * Math.PI) / 180;
-  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
-  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+  // Earth's radius in meters
+  const EARTH_RADIUS_METERS = 6371e3;
 
-  const a =
-    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  // Convert latitude and longitude from degrees to radians
+  // (Trigonometric functions require radians, not degrees)
+  const lat1Radians = toRadians(latitude1);
+  const lat2Radians = toRadians(latitude2);
 
-  return R * c;
+  // Calculate the differences in latitude and longitude (in radians)
+  const latitudeDifference = toRadians(latitude2 - latitude1);
+  const longitudeDifference = toRadians(longitude2 - longitude1);
+
+  // Haversine formula: calculates the angular distance between two points
+  // on a sphere given their longitudes and latitudes
+  const haversineA =
+    Math.sin(latitudeDifference / 2) * Math.sin(latitudeDifference / 2) +
+    Math.cos(lat1Radians) *
+      Math.cos(lat2Radians) *
+      Math.sin(longitudeDifference / 2) *
+      Math.sin(longitudeDifference / 2);
+
+  // Convert angular distance to central angle
+  const centralAngle =
+    2 * Math.atan2(Math.sqrt(haversineA), Math.sqrt(1 - haversineA));
+
+  // Multiply the central angle by Earth's radius to get the distance
+  return EARTH_RADIUS_METERS * centralAngle;
+}
+
+/**
+ * Helper function to convert degrees to radians
+ * @param degrees - Angle in degrees
+ * @returns Angle in radians
+ */
+function toRadians(degrees: number): number {
+  return (degrees * Math.PI) / 180;
 }
 
 /**
