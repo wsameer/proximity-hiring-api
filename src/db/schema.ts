@@ -7,7 +7,7 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 
-export const userTypeEnum = pgEnum("user_type", ["job_seeker", "job_giver"]);
+export const userTypeEnum = pgEnum("user_type", ["item_seeker", "item_seller"]);
 
 export const user = pgTable(
   "user",
