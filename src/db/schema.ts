@@ -1,13 +1,74 @@
+/**
+ * Complete database schema for Jobximity
+ * All tables defined here to avoid circular dependencies
+ */
 import {
   pgTable,
   text,
   timestamp,
   boolean,
   pgEnum,
+  integer,
   index,
+  uuid,
+  unique,
+  real,
+  varchar,
 } from "drizzle-orm/pg-core";
 
-export const userTypeEnum = pgEnum("user_type", ["item_seeker", "item_seller"]);
+// ============================================
+// ENUMS
+// ============================================
+
+// User-related enums
+export const verificationLevelEnum = pgEnum("verification_level", [
+  "level_0",
+  "level_1_giver",
+]);
+export const onlineStatusEnum = pgEnum("online_status", ["online", "offline"]);
+
+// Listing-related enums
+export const listingTypeEnum = pgEnum("listing_type", ["job_listing", "job_referral"]);
+export const workModeEnum = pgEnum("work_mode", ["remote", "hybrid", "onsite"]);
+export const employmentTypeEnum = pgEnum("employment_type", [
+  "full_time",
+  "part_time",
+  "contract",
+  "freelance",
+]);
+
+// Match-related enums
+export const matchStatusEnum = pgEnum("match_status", [
+  "pending",
+  "accepted",
+  "declined",
+  "out_of_range",
+]);
+
+// Chat-related enums
+export const conversationStatusEnum = pgEnum("conversation_status", [
+  "active",
+  "archived",
+  "deleted",
+]);
+
+// Moderation-related enums
+export const reportTypeEnum = pgEnum("report_type", [
+  "profile",
+  "listing",
+  "message",
+  "other",
+]);
+export const reportStatusEnum = pgEnum("report_status", [
+  "pending",
+  "reviewed",
+  "action_taken",
+  "dismissed",
+]);
+
+// ============================================
+// USER TABLES
+// ============================================
 
 export const user = pgTable(
   "user",
@@ -16,24 +77,50 @@ export const user = pgTable(
     name: text("name").notNull(),
     email: text("email").notNull().unique(),
     emailVerified: boolean("email_verified").default(false).notNull(),
-    image: text("image"),
+
+    // Avatar generation (no image upload for MVP)
+    avatarUrl: text("avatar_url"),
+
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => new Date())
       .notNull(),
 
-    // Custom fields for the app
-    userType: userTypeEnum().notNull(),
-    isHidden: boolean("isHidden").default(false).notNull(),
-    openForContact: boolean("openForContact").default(true).notNull(),
-    contactClosedAt: timestamp("contactClosedAt"),
+    // Profile fields (required by PRD)
+    // Note: All users are seekers by default. No account type needed.
+    // "Giver" is an action (posting listings), not an identity.
+    currentEmployer: text("current_employer"),
+    currentJobTitle: text("current_job_title"),
+    yearsOfExperience: integer("years_of_experience"),
+    topSkills: text("top_skills").array().default([]),
+
+    // Verification (everyone starts level_0)
+    verificationLevel: verificationLevelEnum()
+      .default("level_0")
+      .notNull(),
+
+    // Presence tracking
+    onlineStatus: onlineStatusEnum()
+      .default("offline")
+      .notNull(),
+    lastSeenAt: timestamp("last_seen_at"),
+
+    // Privacy controls
+    isHidden: boolean("is_hidden").default(false).notNull(),
+    openForContact: boolean("open_for_contact").default(true).notNull(),
+    contactClosedAt: timestamp("contact_closed_at"),
   },
   (table) => [
     index("user_email_idx").on(table.email),
-    index("user_type_idx").on(table.userType),
+    index("user_online_status_idx").on(table.onlineStatus),
+    index("user_verification_level_idx").on(table.verificationLevel),
   ]
 );
+
+// ============================================
+// AUTH TABLES (BetterAuth)
+// ============================================
 
 export const session = pgTable(
   "session",
@@ -43,7 +130,7 @@ export const session = pgTable(
     token: text("token").notNull().unique(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => new Date())
       .notNull(),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
@@ -76,7 +163,7 @@ export const account = pgTable(
     password: text("password"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => [
@@ -95,7 +182,7 @@ export const verification = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
-      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => new Date())
       .notNull(),
   },
   (table) => [
@@ -104,267 +191,247 @@ export const verification = pgTable(
   ]
 );
 
-// // ============================================
-// // 2. JOB SEEKER PROFILES
-// // ============================================
-// export const jobSeekerProfiles = pgTable(
-//   "job_seeker_profile",
-//   {
-//     id: uuid("id").defaultRandom().primaryKey(),
-//     userId: text("userId").notNull().unique()
-//       .references(() => users.id, { onDelete: "cascade" }),
-//     headline: varchar("headline", { length: 255 }),
-//     yearsOfExperience: integer("yearsOfExperience"),
-//     topSkills: jsonb("topSkills").$type<string[]>().default(sql`'[]'::jsonb`),
-//     customLink1: varchar("customLink1", { length: 500 }),
-//     customLink2: varchar("customLink2", { length: 500 }),
-//     createdAt: timestamp("createdAt").defaultNow().notNull(),
-//     updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-//   },
-//   (table) => ({
-//     userIdIdx: index("job_seeker_user_id_idx").on(table.userId),
-//   })
-// );
+// ============================================
+// LOCATION TABLES
+// ============================================
 
-// // ============================================
-// // 3. JOB GIVER PROFILES
-// // ============================================
-// export const jobGiverProfiles = pgTable(
-//   "job_giver_profile",
-//   {
-//     id: uuid("id").defaultRandom().primaryKey(),
-//     userId: text("userId").notNull().unique()
-//       .references(() => users.id, { onDelete: "cascade" }),
-//     companyName: varchar("companyName", { length: 255 }).notNull(),
-//     industry: varchar("industry", { length: 100 }),
-//     website: varchar("website", { length: 500 }),
-//     responseRate: numeric("responseRate", { precision: 3, scale: 2 }).default("0.00"),
-//     createdAt: timestamp("createdAt").defaultNow().notNull(),
-//     updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-//   },
-//   (table) => ({
-//     userIdIdx: index("job_giver_user_id_idx").on(table.userId),
-//   })
-// );
+export const userLocation = pgTable(
+  "user_location",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .unique()
+      .references(() => user.id, { onDelete: "cascade" }),
 
-// // ============================================
-// // 4. JOB LISTINGS
-// // ============================================
-// export const jobListings = pgTable(
-//   "job_listing",
-//   {
-//     id: uuid("id").defaultRandom().primaryKey(),
-//     jobGiverId: text("jobGiverId").notNull()
-//       .references(() => users.id, { onDelete: "cascade" }),
-//     title: varchar("title", { length: 255 }).notNull(),
-//     description: text("description"),
-//     industry: varchar("industry", { length: 100 }),
-//     employerName: varchar("employerName", { length: 255 }),
-//     location: geography("location", { type: "point" }).notNull(),
-//     workMode: pgEnum("work_mode", ["remote", "hybrid", "onsite"])("workMode").notNull(),
-//     employmentType: pgEnum("employment_type", ["full_time", "part_time", "contract", "freelance"])("employmentType").notNull(),
-//     experienceRange: varchar("experienceRange", { length: 100 }),
-//     payRange: varchar("payRange", { length: 100 }),
-//     isActive: boolean("isActive").default(true).notNull(),
-//     createdAt: timestamp("createdAt").defaultNow().notNull(),
-//     updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-//     expiresAt: timestamp("expiresAt"),
-//   },
-//   (table) => ({
-//     jobGiverIdIdx: index("job_listing_job_giver_id_idx").on(table.jobGiverId),
-//     locationIdx: index("job_listing_location_idx").using("gist", table.location),
-//     isActiveIdx: index("job_listing_is_active_idx").on(table.isActive),
-//   })
-// );
+    // H3 cell for privacy
+    h3Cell: varchar("h3_cell", { length: 15 }).notNull(),
 
-// // ============================================
-// // 5. MATCHES (Job Seeker + Job Giver Connection)
-// // ============================================
-// export const matches = pgTable(
-//   "match",
-//   {
-//     id: uuid("id").defaultRandom().primaryKey(),
-//     jobSeekerId: text("jobSeekerId").notNull()
-//       .references(() => users.id, { onDelete: "cascade" }),
-//     jobGiverId: text("jobGiverId").notNull()
-//       .references(() => users.id, { onDelete: "cascade" }),
-//     jobListingId: uuid("jobListingId").notNull()
-//       .references(() => jobListings.id, { onDelete: "cascade" }),
-//     status: pgEnum("match_status", ["pending", "accepted", "rejected", "out_of_range"])("status").default("pending").notNull(),
-//     createdAt: timestamp("createdAt").defaultNow().notNull(),
-//     updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-//     expiresAt: timestamp("expiresAt"),
-//   },
-//   (table) => ({
-//     jobSeekerIdIdx: index("match_job_seeker_id_idx").on(table.jobSeekerId),
-//     jobGiverIdIdx: index("match_job_giver_id_idx").on(table.jobGiverId),
-//     jobListingIdIdx: index("match_job_listing_id_idx").on(table.jobListingId),
-//     statusIdx: index("match_status_idx").on(table.status),
-//     uniqueMatch: unique("unique_match").on(table.jobSeekerId, table.jobGiverId, table.jobListingId),
-//   })
-// );
+    // Actual coordinates
+    latitude: real("latitude").notNull(),
+    longitude: real("longitude").notNull(),
 
-// // ============================================
-// // 6. CHATS (Auto-delete after 7 days)
-// // ============================================
-// export const chats = pgTable(
-//   "chat",
-//   {
-//     id: uuid("id").defaultRandom().primaryKey(),
-//     matchId: uuid("matchId").notNull()
-//       .references(() => matches.id, { onDelete: "cascade" }),
-//     senderId: text("senderId").notNull()
-//       .references(() => users.id, { onDelete: "cascade" }),
-//     recipientId: text("recipientId").notNull()
-//       .references(() => users.id, { onDelete: "cascade" }),
-//     message: text("message").notNull(),
-//     createdAt: timestamp("createdAt").defaultNow().notNull(),
-//     expiresAt: timestamp("expiresAt").defaultNow(), // 7 days from creation
-//   },
-//   (table) => ({
-//     matchIdIdx: index("chat_match_id_idx").on(table.matchId),
-//     senderIdIdx: index("chat_sender_id_idx").on(table.senderId),
-//     expiresAtIdx: index("chat_expires_at_idx").on(table.expiresAt),
-//   })
-// );
+    // PostGIS geometry column added via migration SQL
 
-// // ============================================
-// // 7. JOB REFERRALS
-// // ============================================
-// export const jobReferrals = pgTable(
-//   "job_referral",
-//   {
-//     id: uuid("id").defaultRandom().primaryKey(),
-//     createdByUserId: text("createdByUserId").notNull()
-//       .references(() => users.id, { onDelete: "cascade" }),
-//     referredUserEmail: varchar("referredUserEmail", { length: 255 }).notNull(),
-//     jobListingId: uuid("jobListingId")
-//       .references(() => jobListings.id, { onDelete: "set null" }),
-//     jobTitle: varchar("jobTitle", { length: 255 }).notNull(),
-//     companyName: varchar("companyName", { length: 255 }).notNull(),
-//     message: text("message"),
-//     status: pgEnum("referral_status", ["pending", "accepted", "rejected"])("status").default("pending").notNull(),
-//     createdAt: timestamp("createdAt").defaultNow().notNull(),
-//     updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-//   },
-//   (table) => ({
-//     createdByUserIdIdx: index("job_referral_created_by_user_id_idx").on(table.createdByUserId),
-//     referredEmailIdx: index("job_referral_referred_email_idx").on(table.referredUserEmail),
-//     statusIdx: index("job_referral_status_idx").on(table.status),
-//   })
-// );
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("user_location_user_id_idx").on(table.userId),
+    index("user_location_h3_cell_idx").on(table.h3Cell),
+  ]
+);
 
-// // ============================================
-// // 8. USER BLOCKS (Cannot see each other)
-// // ============================================
-// export const userBlocks = pgTable(
-//   "user_block",
-//   {
-//     id: uuid("id").defaultRandom().primaryKey(),
-//     userId: text("userId").notNull()
-//       .references(() => users.id, { onDelete: "cascade" }),
-//     blockedUserId: text("blockedUserId").notNull()
-//       .references(() => users.id, { onDelete: "cascade" }),
-//     reason: varchar("reason", { length: 255 }),
-//     createdAt: timestamp("createdAt").defaultNow().notNull(),
-//   },
-//   (table) => ({
-//     userIdIdx: index("user_block_user_id_idx").on(table.userId),
-//     uniqueBlock: unique("unique_block").on(table.userId, table.blockedUserId),
-//   })
-// );
+// ============================================
+// LISTING TABLES
+// ============================================
 
-// // ============================================
-// // 9. NOTIFICATIONS
-// // ============================================
-// export const notifications = pgTable(
-//   "notification",
-//   {
-//     id: uuid("id").defaultRandom().primaryKey(),
-//     userId: text("userId").notNull()
-//       .references(() => users.id, { onDelete: "cascade" }),
-//     type: pgEnum("notification_type", ["match", "message", "referral", "system"])("type").notNull(),
-//     title: varchar("title", { length: 255 }).notNull(),
-//     body: text("body"),
-//     relatedId: uuid("relatedId"), // Can reference match, chat, etc.
-//     isRead: boolean("isRead").default(false).notNull(),
-//     createdAt: timestamp("createdAt").defaultNow().notNull(),
-//   },
-//   (table) => ({
-//     userIdIdx: index("notification_user_id_idx").on(table.userId),
-//     isReadIdx: index("notification_is_read_idx").on(table.isRead),
-//   })
-// );
+export const jobListing = pgTable(
+  "job_listing",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
 
-// // ============================================
-// // 10. ACTIVITY LOG (Audit trail)
-// // ============================================
-// export const activityLogs = pgTable(
-//   "activity_log",
-//   {
-//     id: uuid("id").defaultRandom().primaryKey(),
-//     userId: text("userId").notNull()
-//       .references(() => users.id, { onDelete: "cascade" }),
-//     action: varchar("action", { length: 100 }).notNull(),
-//     resourceType: varchar("resourceType", { length: 50 }),
-//     resourceId: varchar("resourceId", { length: 255 }),
-//     details: jsonb("details"),
-//     createdAt: timestamp("createdAt").defaultNow().notNull(),
-//   },
-//   (table) => ({
-//     userIdIdx: index("activity_log_user_id_idx").on(table.userId),
-//     createdAtIdx: index("activity_log_created_at_idx").on(table.createdAt),
-//   })
-// );
+    listingType: listingTypeEnum().notNull(),
 
-// // ============================================
-// // RELATIONS (TypeORM-like access patterns)
-// // ============================================
-// export const usersRelations = relations(users, ({ one, many }) => ({
-//   jobSeekerProfile: one(jobSeekerProfiles),
-//   jobGiverProfile: one(jobGiverProfiles),
-//   jobListings: many(jobListings),
-//   matchesAsSeeker: many(matches, { relationName: "seeker" }),
-//   matchesAsGiver: many(matches, { relationName: "giver" }),
-//   sentChats: many(chats, { relationName: "sender" }),
-//   receivedChats: many(chats, { relationName: "recipient" }),
-//   referralsCreated: many(jobReferrals),
-//   blockedUsers: many(userBlocks, { relationName: "blocker" }),
-//   notifications: many(notifications),
-//   activityLogs: many(activityLogs),
-// }));
+    title: text("title").notNull(),
+    description: text("description"),
+    industry: text("industry"),
+    employerName: text("employer_name").notNull(),
 
-// export const jobListingsRelations = relations(jobListings, ({ one, many }) => ({
-//   jobGiver: one(users, { fields: [jobListings.jobGiverId], references: [users.id] }),
-//   matches: many(matches),
-//   referrals: many(jobReferrals),
-// }));
+    city: text("city").notNull(),
+    workMode: workModeEnum().notNull(),
+    employmentType: employmentTypeEnum().notNull(),
 
-// export const matchesRelations = relations(matches, ({ one, many }) => ({
-//   jobSeeker: one(users, {
-//     fields: [matches.jobSeekerId],
-//     references: [users.id],
-//     relationName: "seeker"
-//   }),
-//   jobGiver: one(users, {
-//     fields: [matches.jobGiverId],
-//     references: [users.id],
-//     relationName: "giver"
-//   }),
-//   jobListing: one(jobListings),
-//   chats: many(chats),
-// }));
+    experienceRange: text("experience_range"),
+    payRange: text("pay_range"),
 
-// export const chatsRelations = relations(chats, ({ one }) => ({
-//   match: one(matches),
-//   sender: one(users, {
-//     fields: [chats.senderId],
-//     references: [users.id],
-//     relationName: "sender"
-//   }),
-//   recipient: one(users, {
-//     fields: [chats.recipientId],
-//     references: [users.id],
-//     relationName: "recipient"
-//   }),
-// }));
+    isActive: boolean("is_active").default(true).notNull(),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+    expiresAt: timestamp("expires_at"),
+  },
+  (table) => [
+    index("job_listing_user_id_idx").on(table.userId),
+    index("job_listing_type_idx").on(table.listingType),
+    index("job_listing_is_active_idx").on(table.isActive),
+    index("job_listing_city_idx").on(table.city),
+  ]
+);
+
+export const listingCount = pgTable(
+  "listing_count",
+  {
+    userId: text("user_id")
+      .primaryKey()
+      .references(() => user.id, { onDelete: "cascade" }),
+
+    activeJobListings: integer("active_job_listings").default(0).notNull(),
+    activeJobReferrals: integer("active_job_referrals").default(0).notNull(),
+
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  }
+);
+
+// ============================================
+// MATCH TABLES
+// ============================================
+
+export const matchRequest = pgTable(
+  "match_request",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    requesterId: text("requester_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+
+    targetId: text("target_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+
+    listingId: uuid("listing_id").references(() => jobListing.id, {
+      onDelete: "cascade",
+    }),
+
+    status: matchStatusEnum().default("pending").notNull(),
+
+    requestedAt: timestamp("requested_at").defaultNow().notNull(),
+    respondedAt: timestamp("responded_at"),
+
+    wasInRangeAtRequest: timestamp("was_in_range_at_request")
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("match_request_requester_id_idx").on(table.requesterId),
+    index("match_request_target_id_idx").on(table.targetId),
+    index("match_request_listing_id_idx").on(table.listingId),
+    index("match_request_status_idx").on(table.status),
+    unique("unique_match_request").on(
+      table.requesterId,
+      table.targetId,
+      table.listingId
+    ),
+  ]
+);
+
+// ============================================
+// CHAT TABLES
+// ============================================
+
+export const chatConversation = pgTable(
+  "chat_conversation",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    matchId: uuid("match_id")
+      .notNull()
+      .unique()
+      .references(() => matchRequest.id, { onDelete: "cascade" }),
+
+    status: conversationStatusEnum()
+      .default("active")
+      .notNull(),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    archivedAt: timestamp("archived_at"),
+  },
+  (table) => [
+    index("chat_conversation_match_id_idx").on(table.matchId),
+    index("chat_conversation_status_idx").on(table.status),
+    index("chat_conversation_expires_at_idx").on(table.expiresAt),
+  ]
+);
+
+export const chatMessage = pgTable(
+  "chat_message",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    conversationId: uuid("conversation_id")
+      .notNull()
+      .references(() => chatConversation.id, { onDelete: "cascade" }),
+
+    senderId: text("sender_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+
+    message: text("message").notNull(),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("chat_message_conversation_id_idx").on(table.conversationId),
+    index("chat_message_sender_id_idx").on(table.senderId),
+    index("chat_message_created_at_idx").on(table.createdAt),
+  ]
+);
+
+// ============================================
+// MODERATION TABLES
+// ============================================
+
+export const report = pgTable(
+  "report",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    reporterId: text("reporter_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+
+    reportedUserId: text("reported_user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+
+    reportType: reportTypeEnum().notNull(),
+    reason: text("reason").notNull(),
+    status: reportStatusEnum()
+      .default("pending")
+      .notNull(),
+
+    relatedId: uuid("related_id"),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    reviewedAt: timestamp("reviewed_at"),
+  },
+  (table) => [
+    index("report_reporter_id_idx").on(table.reporterId),
+    index("report_reported_user_id_idx").on(table.reportedUserId),
+    index("report_status_idx").on(table.status),
+  ]
+);
+
+export const userBlock = pgTable(
+  "user_block",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+
+    blockedUserId: text("blocked_user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+
+    reason: text("reason"),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("user_block_user_id_idx").on(table.userId),
+    index("user_block_blocked_user_id_idx").on(table.blockedUserId),
+    unique("unique_user_block").on(table.userId, table.blockedUserId),
+  ]
+);

@@ -5,6 +5,7 @@ import { logger } from "hono/logger";
 
 import { env } from "./config/env.js";
 import type { AppContext } from "./types/app.js";
+import { connectRedis, disconnectRedis } from "./config/redis.js";
 
 // Middleware
 import { sessionMiddleware } from "./middleware/auth.js";
@@ -13,8 +14,12 @@ import { sessionMiddleware } from "./middleware/auth.js";
 import authRoutes from "./routes/auth.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import publicRoutes from "./routes/public.routes.js";
+import profileRoutes from "./routes/profile.routes.js";
 
 const app = new Hono<AppContext>();
+
+// Initialize Redis
+await connectRedis();
 
 // ============================================
 // GLOBAL MIDDLEWARE
@@ -45,6 +50,7 @@ app.use("*", sessionMiddleware);
 
 app.route("/", publicRoutes);
 app.route("/", authRoutes);
+app.route("/", profileRoutes);
 app.route("/", userRoutes);
 
 const port = env.PORT;
@@ -59,11 +65,16 @@ const server = serve(
 );
 
 // graceful shutdown
-process.on("SIGINT", () => {
+process.on("SIGINT", async () => {
+  console.log("Shutting down gracefully...");
+  await disconnectRedis();
   server.close();
   process.exit(0);
 });
-process.on("SIGTERM", () => {
+
+process.on("SIGTERM", async () => {
+  console.log("Shutting down gracefully...");
+  await disconnectRedis();
   server.close((err) => {
     if (err) {
       console.error(err);

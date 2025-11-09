@@ -6,10 +6,10 @@ import * as schema from "./schema.js";
 
 const connectionString = env.DATABASE_URL!;
 
-// for query purposes
-const queryClient = postgres(connectionString);
+// Connection pool for queries (default max: 10)
+const queryClient = postgres(connectionString, { max: 10 });
 
 export const db = drizzle(queryClient, { schema });
 
-// for migrations
+// Dedicated connection for migrations (max: 1)
 export const migrationClient = postgres(connectionString, { max: 1 });
