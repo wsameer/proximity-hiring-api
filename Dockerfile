@@ -5,6 +5,7 @@ ARG PNPM_VERSION=10.14.0
 
 ################################################################################
 # Use node image for base image for all stages.
+# Multi-platform support (works on both ARM64 and AMD64)
 FROM node:${NODE_VERSION}-alpine as base
 
 # Set working directory for all build stages.
@@ -51,11 +52,15 @@ USER node
 # Copy package.json so that package manager commands can be used.
 COPY package.json .
 
-# Copy the production dependencies from the deps stage and also
-# the built application from the build stage into the image.
-COPY --from=deps /usr/src/app/node_modules ./node_modules
+# Copy ALL dependencies (including devDependencies for migrations)
+# This includes drizzle-kit needed for db:push, db:generate, db:migrate
+COPY --from=build /usr/src/app/node_modules ./node_modules
 COPY --from=build /usr/src/app/dist ./dist
 
+# Copy source files for migrations (drizzle-kit needs schema.ts)
+COPY --from=build /usr/src/app/src ./src
+COPY --from=build /usr/src/app/drizzle.config.ts ./drizzle.config.ts
+COPY --from=build /usr/src/app/tsconfig.json ./tsconfig.json
 
 # Expose the port that the application listens on.
 EXPOSE 3000

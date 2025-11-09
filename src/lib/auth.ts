@@ -16,7 +16,10 @@ export const auth = betterAuth({
     requireEmailVerification: true,
   },
 
-  trustedOrigins: [env.APP_URL!],
+  trustedOrigins: [
+    env.BETTER_AUTH_URL!, // API's own URL
+    ...(env.APP_URL ? [env.APP_URL] : []), // Frontend URL if set
+  ],
   baseURL: env.BETTER_AUTH_URL,
   secret: env.BETTER_AUTH_SECRET,
 
